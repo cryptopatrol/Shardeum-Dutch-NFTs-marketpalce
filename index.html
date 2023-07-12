@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dutch Auction NFT</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.4.umd.min.js" type="text/javascript"></script>
+</head>
+<body>
+    <h1>Dutch Auction NFT</h1>
+
+    <h2>Connect to Ethereum</h2>
+    <button onclick="connectWallet()">Connect Wallet</button>
+    <p id="status"></p>
+
+    <h2>Auction Details</h2>
+    <p>Current Highest Bid: <span id="highestBid"></span> ETH</p>
+    <p>Remaining Time: <span id="remainingTime"></span> seconds</p>
+
+    <h2>Place a Bid</h2>
+    <input type="number" id="bidAmount" placeholder="Bid Amount (ETH)">
+    <button onclick="placeBid()">Place Bid</button>
+
+    <h2>End the Auction</h2>
+    <button onclick="endAuction()">End Auction</button>
+
+    <script type="text/javascript">
+        // Update the contract address with your deployed contract address
+        const contractAddress = "CONTRACT_ADDRESS";
+
+        let provider;
+        let signer;
+        let contract;
+
+        async function connectWallet() {
+            if (typeof window.ethereum !== "undefined") {
+                await window.ethereum.request({ method: "eth_requestAccounts" });
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                contract = new ethers.Contract(contractAddress, contractABI, signer);
+                document.getElementById("status").innerText = "Connected to Ethereum";
+                refreshAuctionDetails();
+            } else {
+                document.getElementById("status").innerText = "Please install MetaMask";
+            }
+        }
+
+        async function refreshAuctionDetails() {
+            const highestBid = await contract.highestBid();
+            const remainingTime = await contract.auctionEndTime() - Math.floor(Date.now() / 1000);
+
+            document.getElementById("highestBid").innerText = ethers.utils.formatEther(highestBid);
+            document.getElementById("remainingTime").innerText = remainingTime;
+        }
+
+        async function placeBid() {
+            const bidAmount = document.getElementById("bidAmount").value;
+            const overrides = {
+                value: ethers.utils.parseEther(bidAmount),
+            };
+
+            await contract.placeBid(overrides);
+            refreshAuctionDetails();
+        }
+
+        async function endAuction() {
+            await contract.endAuction();
+            refreshAuctionDetails();
+        }
+    </script>
+</body>
+</html>
